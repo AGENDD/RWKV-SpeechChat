@@ -59,7 +59,7 @@ class SLAM_ASR(nn.Module):
             hidden_dim=hidden_dim,
             train_mode=train_mode,
             device=device,
-        ).to(self.device)
+        ).to(self.device,dtype=torch.bfloat16)
         
         self.set_gradient(train_mode,'state')
 
@@ -241,6 +241,18 @@ class SLAM_ASR(nn.Module):
             # print(f"true_labels:\t{padded_labels.shape}")
             true_labels = padded_labels
         else:
+            end_of_audio = self.language_tokenizer(
+                "#",
+                return_tensors="pt",
+            ).to("cuda")
+            with torch.no_grad():
+                end_of_audio = self.language_model.embed(end_of_audio.input_ids.squeeze(0))
+                # print(f"end of audio:\n{end_of_audio}")
+            
+            
+            # print(f"Speech output:\n{speech_output}")
+            speech_output = torch.cat((speech_output, end_of_audio.unsqueeze(0).unsqueeze(0).to("cuda")), dim= 1)
+            
             prompt_embed = speech_output
             prompt_mask = mask
             true_labels = None
@@ -274,11 +286,7 @@ class SLAM_ASR(nn.Module):
         Generate the transcription
         """
         prompt_embed, prompt_mask, _ = self._prepare_input_embeds([audios])
-        
-        # print(f"embed:{prompt_embed.squeeze(0).shape}")
-        # print(f"mask:{prompt_mask.shape}")
-        # print(f"state:{state.shape}")
-        
+
         out, state = self.language_model.forward(tokens=[], embed=prompt_embed.squeeze(0).to('cuda'),state=state)
         
         # out, state = self.language_model.forward(tokens=self.language_tokenizer.encode(
@@ -287,14 +295,14 @@ class SLAM_ASR(nn.Module):
         
         MAX_LENGTH = 20
         true_output = []
-        print("character:",end="")
+        # print("character:",end="")
         for i in range(MAX_LENGTH):
             # print(f"logit:{out.shape}")
             probabilities = F.softmax(out, dim=-1)
             _, top_idx = probabilities.topk(1, dim=-1)
             # print(f"token:{top_idx}")
             decoded_token = self.language_tokenizer.decode(top_idx)
-            print(f"{decoded_token}",end="")
+            # print(f"{decoded_token}",end="")
             if decoded_token == '<s>':
                 break
             else:
@@ -302,7 +310,7 @@ class SLAM_ASR(nn.Module):
             
             out, state = self.language_model.forward(tokens=top_idx,state=state)
         
-        print("")
+        # print("")
         return true_output
 
     @property

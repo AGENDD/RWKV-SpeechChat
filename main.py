@@ -6,21 +6,21 @@ from rwkv.model import RWKV
 from rwkv.utils import PIPELINE, PIPELINE_ARGS
 # print("CUDA 版本:", torch.version.cuda)
 # print("CUDA 可用:", torch.cuda.is_available())
-lm_model = RWKV(model='model/RWKV-x060-World-3B-v2.1-20240417-ctx4096', strategy='cuda fp32')
+lm_model = RWKV(model='model/RWKV-x060-World-3B-v2.1-20240417-ctx4096', strategy='cuda bf16')
 # pipe+line = PIPELINE(model, "rwkv_vocab_v20230424")
 # out, state = lm_model.forward([187, 510, 1563, 310, 247], None)
 # print(out.shape)
 # print(len(state))
 # for i in range(len(state)):
 #     print(state[i].shape)
-
+lm_model = lm_model.to(dtype=torch.bfloat16)
 
 model = SLAM_ASR(
     "microsoft/wavlm-large",
     lm_model
-).to("cuda")
+).to("cuda", dtype=torch.bfloat16)
 
-model_path = "model/rwkv-adapter-25100.pth"
+model_path = "model/rwkv-adapter-zhCN-aishell.pth"
 model_state_dict = torch.load(model_path)
 
 
@@ -29,10 +29,11 @@ state = []
 for param_name, param_tensor in model_state_dict.items():
     if 'adapter' in param_name:
         model.state_dict()[param_name].copy_(param_tensor)
+        
 for i in range(32):
-    state.append(torch.zeros(2560).to("cuda"))
-    state.append(model_state_dict[f"language_model.blocks.{i}.att.time_state"].to("cuda"))
-    state.append(torch.zeros(2560).to("cuda"))
+    state.append(torch.zeros(2560).to("cuda",dtype=torch.bfloat16))
+    state.append(model_state_dict[f"language_model.blocks.{i}.att.time_state"].to("cuda",dtype=torch.bfloat16))
+    state.append(torch.zeros(2560).to("cuda",dtype=torch.bfloat16))
 # state = torch.stack(state)
 # print(state.shape)
 
@@ -42,9 +43,34 @@ for i in range(32):
 # for param_name, param_tensor in model.state_dict().items():
 #     print(f"模型参数名称: {param_name}, 参数形状: {param_tensor.shape}")
 
+########################################################################################
+
+# import librosa
+# import time
+
+# audio, sr = librosa.load("this.wav", sr=None)
+# audio = librosa.resample(audio, orig_sr=sr, target_sr=16000)
+# model = model.to("cuda", dtype=torch.bfloat16)
+# # model = model.to("cuda", dtype=torch.bfloat16)
+
+# start_time = time.time()
+# output= model.generate(audio, state.copy())
+# output = ''.join(output)
+# end_time = time.time()
+
+# # print(f"audio: {args.file_path}")
+# print(f"predict: {output}")
+# print(f"Response time: {end_time - start_time} seconds")
+# exit(0)
+#########################################################################################
+
 import pyaudio
 import numpy as np
 import time
+import librosa
+import scipy.io.wavfile as wavfile
+import os
+
 
 # 设置参数
 FORMAT = pyaudio.paInt16
@@ -84,11 +110,19 @@ while True:
         elif time.time() - silence_start > SILENCE_DURATION:
             print("audio end...")
             frames = np.hstack(frames)
-            frames = frames.astype(np.float32) / 32768.0
-            # print(frames)
-            output = model.generate(frames, state.copy())
-            output = ''.join(output)
-            print(f"predict: {output}")
+            frames = np.pad(frames, (8000, 8000), 'constant', constant_values=0.0)
+            
+            wavfile.write("this.wav", 16000, frames.astype(np.int16))
+            audio, sr = librosa.load("this.wav", sr=None)
+            audio = librosa.resample(audio, orig_sr=sr, target_sr=16000)
+            
+            if(len(audio) /16000 * 50 > 5):
+                print(f"audio length:{len(audio)}:{len(audio)/16000}")
+                output = model.generate(audio, state.copy())
+                output = ''.join(output)
+                print(f"predict: {output}")
             frames = []
             # print(f"output: {output}")
             recording = False
+            # os.remove("this.wav")
+            # exit(0)

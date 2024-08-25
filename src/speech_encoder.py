@@ -35,7 +35,8 @@ class SpeechEncoder(nn.Module):
             self.processor.feature_extractor.sampling_rate / 50
         )
         self.padding_length = 320
-        self.model = AutoModel.from_pretrained(model_id).to(self.device)
+        self.model = AutoModel.from_pretrained(model_id).to(self.device,dtype=torch.bfloat16)
+        self.model.eval()
         self.model_output_dim = self.model.config.hidden_size
         self.downsample_K = downsample_K
         self.project_dim = project_dim
@@ -71,11 +72,6 @@ class SpeechEncoder(nn.Module):
         Also need to handle the masking issue, to let the model not to attend to the padding tokens
         """
         attention_mask = input_dict["attention_mask"]  # [batch, num_samples]
-        length_in_samples = (
-            attention_mask.shape[1] // self.padding_length * self.padding_length
-        )
-        # calculate the mask length
-        mask_length = length_in_samples // self.time_reduction_factor
         # create the mask
         mask = attention_mask[:, :: (self.time_reduction_factor * self.downsample_K)]
         return mask
@@ -83,7 +79,7 @@ class SpeechEncoder(nn.Module):
     def forward(self, x):
         input_dict = self.processor(
             x, return_tensors="pt", padding=True, sampling_rate=16000
-        ).to(self.device)
+        ).to(self.device,dtype=torch.bfloat16)
         mask = self.calculate_mask(input_dict)
         x = self.model(**input_dict).last_hidden_state
         # reshape the output from [batch_size, num_frames, hidden_size] to [batch_size, num_frames//downsample_K, hidden_size*downsample_K]
