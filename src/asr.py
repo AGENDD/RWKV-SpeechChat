@@ -281,7 +281,7 @@ class SLAM_ASR(nn.Module):
         
         return outputs
 
-    def generate(self, audios: List[float], state, stopping_criteria=None):
+    def generate(self, audios: List[float], state, stop = None, stream = False):
         """
         Generate the transcription
         """
@@ -293,7 +293,7 @@ class SLAM_ASR(nn.Module):
         #     "\nIn a shocking finding, scientist discovered a herd of dragons living in a remote, previously unexplored valley, in Tibet. Even more surprising to the researchers was the fact that the dragons spoke perfect Chinese."),
         #     state=state)
         
-        MAX_LENGTH = 20
+        MAX_LENGTH = 500
         true_output = []
         # print("character:",end="")
         for i in range(MAX_LENGTH):
@@ -302,15 +302,19 @@ class SLAM_ASR(nn.Module):
             _, top_idx = probabilities.topk(1, dim=-1)
             # print(f"token:{top_idx}")
             decoded_token = self.language_tokenizer.decode(top_idx)
-            # print(f"{decoded_token}",end="")
-            if decoded_token == '<s>':
+            
+            if(stream):
+                print(f"{decoded_token}",end="")
+                
+            if stop is not None and stop in decoded_token:
+                true_output.append(decoded_token)
                 break
             else:
                 true_output.append(decoded_token)
             
             out, state = self.language_model.forward(tokens=top_idx,state=state)
-        
-        # print("")
+        if(stream):
+            print("")
         return true_output
 
     @property
