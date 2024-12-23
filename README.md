@@ -16,18 +16,16 @@ RWKV-SpeechChat is a real-time dialogue script based on a frozen 3B RWKV model w
 
 Here are some video demonstartion of speech QA task in English and Chinese.
 
-<video width="320" height="240" controls>
-  <source src="videos/video1.mp4" type="video/mp4">
+<video width="320" height="240" src = "videos/video1.mp4" controls>
   Your browser does not support the video tag.
 </video>
-<video width="320" height="240" controls>
-  <source src="videos/video2.mp4" type="video/mp4">
+<video width="320" height="240" src = "videos/video2.mp4" controls>
   Your browser does not support the video tag.
 </video>
-<video width="320" height="240" controls>
-  <source src="videos/video3.mp4" type="video/mp4">
+<video width="320" height="240" src = "videos/video3.mp4" controls>
   Your browser does not support the video tag.
 </video>
+
 
 
 ## Installation
