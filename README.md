@@ -10,7 +10,7 @@ RWKV-SpeechChat is a real-time dialogue script based on a frozen 3B RWKV model w
 
 ## Demonstration
 
-Here are some video demonstartion of speech QA task in English and Chinese.
+```/veidos``` are some video demonstartions of speech QA task in English and Chinese.
 
 <video width="320" height="240" src = "videos/video1.mp4" controls>
   Your browser does not support the video tag.
