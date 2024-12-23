@@ -26,6 +26,18 @@ RWKV-SpeechChat is a real-time dialogue script based on a frozen 3B RWKV model w
 </video>
 
 
+https://github.com/user-attachments/assets/57bd4394-d6f9-4ff7-bb30-43949fbe2ec8
+
+
+
+https://github.com/user-attachments/assets/1c103597-ca5f-48b1-a898-912596a01ab5
+
+
+
+https://github.com/user-attachments/assets/10555e60-b0a3-4ac7-97b1-fbca7143dc3c
+
+
+
 
 ## Installation
 
