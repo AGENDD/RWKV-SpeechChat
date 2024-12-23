@@ -10,13 +10,8 @@ import torch.nn as nn
 from transformers import LlamaForCausalLM, LlamaTokenizer
 from typing import List
 
-try:
-    from .speech_encoder import SpeechEncoder
-except ImportError:
-    from speech_encoder import SpeechEncoder
-
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from torch.nn import functional as F
+import torch.nn.functional as F
 
 class SLAM_ASR(nn.Module):
     def __init__(
@@ -27,6 +22,7 @@ class SLAM_ASR(nn.Module):
         hidden_dim=2048,
         train_mode="adapter",
         device="cuda",
+        layer = 1,
         token = "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",
     ):
         assert train_mode in ["adapter", "full"]
@@ -51,6 +47,17 @@ class SLAM_ASR(nn.Module):
                 
         # language_project_dim = self.language_model.args.hidden_size
         language_project_dim = 2560
+        
+        if(layer == 1):
+            try:
+                from .speech_encoder import SpeechEncoder
+            except ImportError:
+                from speech_encoder import SpeechEncoder
+        else:    
+            try:
+                from .speech_encoder2 import SpeechEncoder
+            except ImportError:
+                from speech_encoder2 import SpeechEncoder
         
         self.speech_encoder = SpeechEncoder(
             speech_encoder_model_id,
@@ -281,19 +288,25 @@ class SLAM_ASR(nn.Module):
         
         return outputs
 
-    def generate(self, audios: List[float], state, stop = None, stream = False):
+    def generate(self, audios: List[float], state = None, token = None, stop = None, stream = False, history = None):
         """
         Generate the transcription
+        token: token推理
         """
-        prompt_embed, prompt_mask, _ = self._prepare_input_embeds([audios])
+        if(token == None):  
+            prompt_embed, prompt_mask, _ = self._prepare_input_embeds([audios])
+            prompt_embed = prompt_embed.squeeze(0).to('cuda')
+            if(history != None):
 
-        out, state = self.language_model.forward(tokens=[], embed=prompt_embed.squeeze(0).to('cuda'),state=state)
-        
+                prompt_embed = torch.cat([history, prompt_embed],dim=0)
+            out, state = self.language_model.forward(tokens=[], embed=prompt_embed, state=state)
+        else:
+            out, state = self.language_model.forward(tokens=token, state=state)
         # out, state = self.language_model.forward(tokens=self.language_tokenizer.encode(
         #     "\nIn a shocking finding, scientist discovered a herd of dragons living in a remote, previously unexplored valley, in Tibet. Even more surprising to the researchers was the fact that the dragons spoke perfect Chinese."),
         #     state=state)
         
-        MAX_LENGTH = 500
+        MAX_LENGTH = 2000
         true_output = []
         # print("character:",end="")
         for i in range(MAX_LENGTH):
@@ -316,6 +329,34 @@ class SLAM_ASR(nn.Module):
         if(stream):
             print("")
         return true_output
+
+    def preprocess(self, audios, answers):
+        n = len(audios)
+        
+        tensors = None
+        for i in range(n):
+            with torch.no_grad():
+                audioTensor = self.speech_encoder([audios[i]])[0].squeeze(0).to("cuda")
+                
+                answerToken = self.language_tokenizer(
+                    "#" + answers[i],
+                    return_tensors="pt",
+                )
+
+                # print(answerToken.input_ids.shape)
+                answerTensor = self.language_model.embed(answerToken.input_ids.squeeze(0)).to("cuda")
+                
+                
+                # print(audioTensor.shape)
+                # print(answerTensor.shape)
+                if(tensors == None):
+                    tensors = torch.cat([audioTensor, answerTensor], dim=0)
+                else:
+                    tensors = torch.cat([tensors, audioTensor, answerTensor], dim=0)
+        
+        return tensors
+                
+
 
     @property
     def config(self):
