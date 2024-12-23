@@ -17,6 +17,19 @@ RWKV-SpeechChat 是一个基于冻结的 3B RWKV base模型、训练好的适配
 ```/veidos``` 中是一些英语和中文语音问答任务的视频演示。
 
 
+https://github.com/user-attachments/assets/6eae2e3d-ef07-4fc6-81c1-88fdf64bd3b1
+
+
+
+https://github.com/user-attachments/assets/056a679f-7e6a-448e-b017-2a425eb220b0
+
+
+
+
+https://github.com/user-attachments/assets/a0bd2174-7699-4dee-bbad-583d67911749
+
+
+
 ## 安装
 
 1. 克隆仓库：
