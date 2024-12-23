@@ -1,5 +1,8 @@
 # RWKV-SpeechChat
 
+- [中文说明](README_CN.md)
+- [English](README.md)
+
 RWKV-SpeechChat is a real-time dialogue script based on a frozen 3B RWKV model with trained adapters and initial states. The corresponding training framework is available here: https://github.com/AGENDD/RWKV-ASR, providing more detailed descriptions. Various trained weights can be applied to perform a range of audio tasks, including automatic speech recognition (ASR), speech translation, speech question answering (QA), and more.
 
 ## Features
