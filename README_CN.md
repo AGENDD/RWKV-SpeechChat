@@ -77,4 +77,4 @@ python main.py --multiturns --rwkv_path path/to/your/model/weights.pth --weights
 python main.py
 ```
 
-请注意，多轮对话目前仅支持语音问答。
+请注意，多轮对话目前仅支持语音问答。当看到“Inference start”，可通过按空格键开始和停止录音。

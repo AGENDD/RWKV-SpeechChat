@@ -86,5 +86,5 @@ Or use the default parameters:
 python main.py
 ```
 
-Note that multi-turn conversation currently only supports speech QA.
+Note that multi-turn conversation currently only supports speech QA. When seeing "Inference start", press "space" to start and stop recording.  
 
